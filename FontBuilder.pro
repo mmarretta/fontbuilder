@@ -67,7 +67,8 @@ SOURCES += src/main.cpp \
     src/fontdrawwidget.cpp \
     src/fontloader.cpp \
     src/exporters/sparrowexporter.cpp \
-    src/exporters/fntexporter.cpp
+    src/exporters/fntexporter.cpp \
+    src/exporters/customjsonexporter.cpp
 HEADERS += src/fontbuilder.h \
     src/colorbutton.h \
     src/fontselectframe.h \
@@ -104,7 +105,8 @@ HEADERS += src/fontbuilder.h \
     src/fontdrawwidget.h \
     src/fontloader.h \
     src/exporters/sparrowexporter.h \
-    src/exporters/fntexporter.h
+    src/exporters/fntexporter.h \
+    src/exporters/customjsonexporter.h
 FORMS += src/fontbuilder.ui \
     src/fontselectframe.ui \
     src/fontoptionsframe.ui \
@@ -140,7 +142,7 @@ win32 {
 }
 linux*|freebsd* { 
     CONFIG += link_pkgconfig
-    PKGCONFIG += freetype2
+	PKGCONFIG += freetype2
 }
 OTHER_FILES += fontbuilder_ru.ts \
     fontbuilder_en.ts \

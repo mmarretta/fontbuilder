@@ -39,8 +39,6 @@
 #include <QRgb>
 #include <QColor>
 
-const double M_PI  =3.141592653589793238462;
-
 
 FontRenderer::FontRenderer(QObject *parent,const FontConfig* config) :
     QObject(parent), m_config(config)
