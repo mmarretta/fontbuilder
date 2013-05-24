@@ -38,6 +38,7 @@
 #include <QDebug>
 #include <QRgb>
 #include <QColor>
+#include <qmath.h>
 
 
 FontRenderer::FontRenderer(QObject *parent,const FontConfig* config) :

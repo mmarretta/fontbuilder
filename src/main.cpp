@@ -30,10 +30,14 @@
 
 #include <QtWidgets/QApplication>
 #include <QCoreApplication>
+#include <QDir>
 #include "fontbuilder.h"
 
 int main(int argc, char *argv[])
 {
+	QDir applicationDir(QCoreApplication::applicationDirPath());
+	QCoreApplication::addLibraryPath(applicationDir.filePath("plugins"));
+
     QApplication a(argc, argv);
     QCoreApplication::setOrganizationName("AndryBlack");
     QCoreApplication::setOrganizationDomain("andryblack.com");
