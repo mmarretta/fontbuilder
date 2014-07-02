@@ -35,7 +35,7 @@ OutputConfig::OutputConfig(QObject *parent) :
 {
     m_write_image = true;
     m_write_description = true;
-    m_image_format = "PNG";
+	m_image_format = "png";
     m_chnl_type = "Alpha";
 }
 

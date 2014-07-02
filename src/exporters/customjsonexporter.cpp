@@ -14,7 +14,7 @@
 CustomJsonExporter::CustomJsonExporter(QObject *parent)
 	: AbstractExporter(parent)
 {
-	setExtension("json");
+	setExtension("jfnt");
 }
 
 bool CustomJsonExporter::Export(QByteArray& out)
@@ -27,7 +27,7 @@ bool CustomJsonExporter::Export(QByteArray& out)
 
 	obj.insert("name", QJsonValue(name));
 	obj.insert("size", QJsonValue((int)fontConfig()->size()));
-	obj.insert("file", QJsonValue(texFilename()));
+	obj.insert("file", QJsonValue(texFilename().toLower()));
 
 	foreach(const Symbol& c, symbols())
 	{
