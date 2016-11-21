@@ -76,6 +76,12 @@ void FontOptionsFrame::setConfig(FontConfig *config) {
     }
 }
 
+
+void FontOptionsFrame::on_checkBoxAutohinting_toggled(bool checked)
+{
+	Q_UNUSED(checked);
+}
+
 void FontOptionsFrame::on_checkBoxMissingGlypths_toggled(bool checked)
 {
     if (m_config) m_config->setRenderMissing(checked);
@@ -100,17 +106,10 @@ void FontOptionsFrame::on_horizontalSliderItalic_valueChanged(int value)
     ui->labelItalic->setText(QString().number(value));
 }
 
-void FontOptionsFrame::on_horizontalSliderShadow_valueChanged(int value)
-{
-    if (m_config) m_config->setShadow(value);
-    ui->labelShadow->setText(QString::number(value));
-}
-
 void FontOptionsFrame::on_doubleSpinBoxWidth_valueChanged(double value)
 {
     if (m_config) m_config->setWidth(value);
 }
-
 
 void FontOptionsFrame::on_doubleSpinBoxHeight_valueChanged(double value)
 {
@@ -141,7 +140,3 @@ void FontOptionsFrame::on_comboBox_Hinting_currentIndexChanged(int index)
 {
     if (index>=0) if (m_config) m_config->setHinting(static_cast<FontConfig::HintingMethod>(index));
 }
-
-
-
-

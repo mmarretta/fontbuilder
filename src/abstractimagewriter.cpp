@@ -67,12 +67,8 @@ static void placeImage(QImage& dst,int x,int y,const QImage& src) {
 QImage AbstractImageWriter::buildImage() {
     QImage pixmap(layout()->width(),layout()->height(),QImage::Format_ARGB32);
 
-    //begin choose
-    if(m_chnl_type == "Alpha")
-        pixmap.fill(0x00ffffff);
-    else if(m_chnl_type == "RGB")
-        pixmap.fill(qRgba(0, 0, 0, 0));
-    //end choose
+    pixmap.fill(0x00ffffff);
+
 
     /*
     /// hm.. Qt bug ?

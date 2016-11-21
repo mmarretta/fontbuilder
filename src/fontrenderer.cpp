@@ -32,20 +32,22 @@
 #include "fontconfig.h"
 
 #include FT_OUTLINE_H
+#include FT_TRUETYPE_TABLES_H
 
 #include <QDir>
 #include <QFile>
 #include <QDebug>
 #include <QRgb>
 #include <QColor>
-#include <qmath.h>
 
+#include <math.h>
 
 FontRenderer::FontRenderer(QObject *parent,const FontConfig* config) :
     QObject(parent), m_config(config)
 {
     m_ft_library = 0;
     m_ft_face = 0;
+    m_scale = 1.0f;
     connect(config,SIGNAL(fileChanged()),this,SLOT(on_fontFileChanged()));
     connect(config,SIGNAL(faceIndexChanged()),this,SLOT(on_fontFaceIndexChanged()));
     connect(config,SIGNAL(sizeChanged()),this,SLOT(on_fontSizeChanged()));
@@ -95,6 +97,7 @@ void FontRenderer::rasterize() {
         m_rendered.metrics.ascender = m_ft_face->size->metrics.ascender / 64;
         m_rendered.metrics.descender = m_ft_face->size->metrics.descender/ 64;
         m_rendered.metrics.height = m_ft_face->size->metrics.height/ 64;
+
     } else {
         m_rendered.metrics.ascender = m_ft_face->ascender;
         m_rendered.metrics.descender = m_ft_face->descender;
@@ -104,12 +107,11 @@ void FontRenderer::rasterize() {
 
     bool use_kerning = FT_HAS_KERNING( m_ft_face );
 
-    const ushort* chars = m_config->characters().utf16();
-    size_t amount = 0;
-    while (chars[amount]!=0) amount++;
+    QVector<uint> ucs4chars = m_config->characters().toUcs4();
+    ucs4chars.push_back(0);
     int error = 0;
-    for (size_t i=0;i<amount;i++) {
-        int glyph_index = FT_Get_Char_Index( m_ft_face, chars[i] );
+	for (int i=0;i+1<ucs4chars.size();i++) {
+        int glyph_index = FT_Get_Char_Index( m_ft_face, ucs4chars[i] );
         if (glyph_index==0 && !m_config->renderMissing())
             continue;
 
@@ -147,9 +149,9 @@ void FontRenderer::rasterize() {
         }
         if ( error )
            continue;
-        if (append_bitmap(chars[i])) {
+        if (append_bitmap(ucs4chars[i])) {
             if (use_kerning)
-                append_kerning(chars[i],chars,amount);
+                append_kerning(ucs4chars[i],&ucs4chars.front(),ucs4chars.size()-1);
         }
     }
     imagesChanged(m_chars);
@@ -158,10 +160,10 @@ void FontRenderer::rasterize() {
 
 
 void FontRenderer::clear_bitmaps() {
-    QMap<ushort,RenderedChar>::iterator it = m_rendered.chars.begin();
+    QMap<uint,RenderedChar>::iterator it = m_rendered.chars.begin();
     while (it!=m_rendered.chars.end()) {
         if (!it->locked) {
-            ushort symb = it.key();
+            uint symb = it.key();
             QVector<LayoutChar>::iterator ci = m_chars.begin();
             while (ci!=m_chars.end()) {
                 if (ci->symbol==symb)
@@ -175,23 +177,14 @@ void FontRenderer::clear_bitmaps() {
     }
 }
 
-bool FontRenderer::append_bitmap(ushort symbol) {
+bool FontRenderer::append_bitmap(uint symbol) {
     if (m_rendered.chars[symbol].locked) return false;
     const FT_GlyphSlot  slot = m_ft_face->glyph;
     const FT_Bitmap* bm = &(slot->bitmap);
     int w = bm->width;
     int h = bm->rows;
     QImage img(w,h,QImage::Format_ARGB32);
-
-    //qDebug() << m_chnl_type <<endl;
-
-    // Choose type
-    if(m_chnl_type == "Alpha")
-        img.fill(0x00ffffff);
-    else if(m_chnl_type == "RGB")
-        img.fill(qRgba(0, 0, 0, 0));
-    //End Choose
-
+    img.fill(0x00ffffff);
     const uchar* src = bm->buffer;
     //QColor bg = m_config->bgColor();
     //QColor fg = m_config->fgColor();
@@ -201,14 +194,8 @@ bool FontRenderer::append_bitmap(ushort symbol) {
             for (int col=0;col<w;col++) {
                  {
                     uchar s = src[col];
-
-                    // Choose type
-                    if(m_chnl_type == "Alpha")
-                        *dst = qRgba(0xff,0xff,0xff,s);
-                    else if(m_chnl_type == "RGB")
-                        *dst = qRgba(s, s, s,
-                                     s);
-                    //End Choose
+                    *dst = qRgba(0xff,0xff,0xff,
+                            s);
                 }
                 dst++;
             }
@@ -220,88 +207,29 @@ bool FontRenderer::append_bitmap(ushort symbol) {
 
             for (int col=0;col<w/8;col++) {
                 uchar s = src[col];
-
-                // Choose type
-                if(m_chnl_type == "Alpha") {
-                    *dst++ = qRgba(255,255,255,(s&(1<<7))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<6))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<5))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<4))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<3))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<2))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<1))?255:0);
-                    *dst++ = qRgba(255,255,255,(s&(1<<0))?255:0);
-                }
-                else if(m_chnl_type == "RGB") {
-                    uchar tmps = (s&(1<<7))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<6))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<5))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<4))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<3))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<2))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<1))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    tmps = (s&(1<<0))?255:0;
-                    *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                }
-                //End Choose
+                *dst++ = qRgba(255,255,255,(s&(1<<7))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<6))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<5))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<4))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<3))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<2))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<1))?255:0);
+                *dst++ = qRgba(255,255,255,(s&(1<<0))?255:0);
             }
             {
                 uchar s = src[w/8];
                 int num = 7;
-
-                // Choose type
-                if(m_chnl_type == "Alpha") {
-                    switch (w%8) {
-
-                    case 7:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 6:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 5:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 4:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 3:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 2:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 1:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
-                    case 0:
-                        break;
-
-                    }
+                switch (w%8) {
+                case 7:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 6:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 5:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 4:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 3:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 2:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 1:  *dst++ = qRgba(255,255,255,(s&(1<<(num--)))?255:0);
+                case 0:
+                    break;
                 }
-                else if(m_chnl_type == "RGB") {
-                    uchar tmps = (s&(1<<(num--)))?255:0;
-                    switch (w%8) {
-
-                    case 7:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 6:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 5:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 4:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 3:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 2:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                        tmps = (s&(1<<(num--)))?255:0;
-                    case 1:
-                        *dst++ = qRgba(tmps,tmps,tmps,tmps);
-                    case 0:
-                        break;
-
-                    }
-                }
-                //End Choose
             }
 
             src+=bm->pitch;
@@ -314,7 +242,7 @@ bool FontRenderer::append_bitmap(ushort symbol) {
     return true;
 }
 
-void FontRenderer::append_kerning(ushort symbol,const ushort* other,int amount) {
+void FontRenderer::append_kerning(uint symbol,const uint* other,int amount) {
      FT_Vector  kerning;
      FT_UInt left =  FT_Get_Char_Index( m_ft_face, symbol );
     for (int i=0;i<amount;i++) {
@@ -343,6 +271,7 @@ void FontRenderer::on_fontFileChanged() {
         on_fontFaceIndexChanged();
     }
 }
+
 
 void FontRenderer::on_fontFaceIndexChanged() {
     if (m_ft_face) {
@@ -378,7 +307,7 @@ void FontRenderer::on_fontSizeChanged() {
         int size_y = static_cast<int>(m_config->height()*size*64.0f/100.0f);
         int error = FT_Set_Char_Size(m_ft_face,
                                      FT_F26Dot6(size_x),
-                                     FT_F26Dot6(size_y),m_config->DPI(),m_config->DPI());
+                                     FT_F26Dot6(size_y),m_config->DPI()*m_scale,m_config->DPI()*m_scale);
         //int error = FT_Set_Pixel_Sizes(m_ft_face,size_x/64,size_y/64);
         if (error) {
             qDebug() << "FT_Set_Char_Size error " << error;
@@ -396,28 +325,28 @@ void FontRenderer::on_fontOptionsChanged() {
     rasterize();
 }
 
+void FontRenderer::render(float scale) {
+    m_scale = scale;
+    on_fontSizeChanged();
+}
 
 
-void FontRenderer::placeImage(QPainter& p,ushort symbol,int x,int y) {
+
+void FontRenderer::placeImage(QPainter& p,uint symbol,int x,int y) {
     p.drawImage(x,y,m_rendered.chars[symbol].img);
 }
 
 
 void FontRenderer::LockAll() {
-     QMap<ushort,RenderedChar>::iterator it = m_rendered.chars.begin();
+     QMap<uint,RenderedChar>::iterator it = m_rendered.chars.begin();
      while (it!=m_rendered.chars.end()) {
          it->locked = true;
          it++;
      }
 }
 
-void FontRenderer::SetImage(ushort symb,const QImage& img) {
+void FontRenderer::SetImage(uint symb,const QImage& img) {
     m_rendered.chars[symb].img = img;
     m_rendered.chars[symb].locked = true;
 }
 
-void FontRenderer::renderAs(const QString& type, bool render) {
-    m_chnl_type = type;
-    if(render)
-        rasterize();
-}

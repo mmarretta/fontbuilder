@@ -101,10 +101,6 @@ public:
     void setItalic(int b);
     Q_PROPERTY( int italic READ italic WRITE setItalic )
 
-    int shadow() const { return m_shadow;}
-    void setShadow(int b);
-    Q_PROPERTY( int shadow READ shadow WRITE setShadow )
-
     float width() const { return m_width;}
     void setWidth(float b);
     Q_PROPERTY( float width READ width WRITE setWidth )
@@ -125,6 +121,7 @@ public:
     void setDPI(int dpi);
     Q_PROPERTY( int DPI READ DPI WRITE setDPI )
 
+    static QString defaultFontsPath();
     void emmitChange();
 private:
     QString m_path;
@@ -139,7 +136,6 @@ private:
     bool    m_antialiased;
     int    m_bold;
     int    m_italic;
-    int    m_shadow;
     float   m_width;
     float   m_height;
     int m_char_spacing;

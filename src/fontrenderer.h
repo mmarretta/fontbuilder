@@ -51,11 +51,13 @@ public:
     ~FontRenderer();
 
     const QVector<LayoutChar>& rendered() const { return m_chars;}
-    void placeImage(QPainter& p,ushort sybol,int x,int y);
+    void placeImage(QPainter& p,uint sybol,int x,int y);
     const RendererData& data() const { return m_rendered;}
     void LockAll();
-    void SetImage(ushort symb,const QImage& img);
-    void renderAs(const QString& type, bool render = true);
+    void SetImage(uint symb,const QImage& img);
+    FT_Face face() const { return m_ft_face; }
+    void render(float scale);
+    float scale() const { return m_scale; }
 private:
     const FontConfig* m_config;
     FT_Library m_ft_library;
@@ -64,14 +66,14 @@ private:
     void rasterize();
     RendererData m_rendered;
     QVector<LayoutChar> m_chars;
-    QString m_chnl_type;
     void clear_bitmaps();
-    bool append_bitmap(ushort symbol);
-    void append_kerning(ushort symbol,const ushort* other,int amount);
+    bool append_bitmap(uint symbol);
+    void append_kerning(uint symbol,const uint* other,int amount);
+    float   m_scale;
 signals:
     void imagesChanged();
     void imagesChanged(const QVector<LayoutChar>&);
-
+public slots:
 private slots:
     void on_fontFileChanged();
     void on_fontFaceIndexChanged();

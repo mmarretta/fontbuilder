@@ -67,8 +67,13 @@ SOURCES += src/main.cpp \
     src/fontdrawwidget.cpp \
     src/fontloader.cpp \
     src/exporters/sparrowexporter.cpp \
-    src/exporters/fntexporter.cpp \
+    src/exporters/simpleexporter.cpp \
+    src/layouters/boxlayouteroptimized.cpp \
+    src/exporters/myguiexporter.cpp \
+    src/exporters/bmfontexporter.cpp \
+    src/exporters/ageexporter.cpp \
     src/exporters/customjsonexporter.cpp
+
 HEADERS += src/fontbuilder.h \
     src/colorbutton.h \
     src/fontselectframe.h \
@@ -105,8 +110,13 @@ HEADERS += src/fontbuilder.h \
     src/fontdrawwidget.h \
     src/fontloader.h \
     src/exporters/sparrowexporter.h \
-    src/exporters/fntexporter.h \
+    src/exporters/simpleexporter.h \
+    src/layouters/boxlayouteroptimized.h \
+    src/exporters/myguiexporter.h \
+    src/exporters/bmfontexporter.h \
+    src/exporters/ageexporter.h \
     src/exporters/customjsonexporter.h
+
 FORMS += src/fontbuilder.ui \
     src/fontselectframe.ui \
     src/fontoptionsframe.ui \
@@ -117,33 +127,60 @@ FORMS += src/fontbuilder.ui \
     src/charmapdialog.ui
 TRANSLATIONS = fontbuilder_en.ts \
     fontbuilder_ru.ts
+
 QT += xml
-QT += widgets
+
+greaterThan(QT_MAJOR_VERSION, 4) {
+    QT += widgets
+}
+
 DESTDIR = bin
 OBJECTS_DIR = .obj
 MOC_DIR = .obj
 UI_DIR = .obj
 TARGET = FontBuilder
-CONFIG += C++11
+
 INCLUDEPATH+=src/
-mac { 
-    INCLUDEPATH += ../include
-    INCLUDEPATH += ../include/freetype2
-    LIBS += -L../lib -lfreetype -lz
-# macports support
-    INCLUDEPATH += /opt/local/include /opt/local/include/freetype2
-    LIBS += -L/opt/local/lib
-}
-win32 { 
-    INCLUDEPATH += ../x86/include
-    INCLUDEPATH += ../x86/include/freetype2
-    LIBS += -L../x86/lib \
-        -lfreetype
-}
-linux*|freebsd* { 
-    CONFIG += link_pkgconfig
-	PKGCONFIG += freetype2
+FREETYPE2CONFIG = $$(FREETYPE2CONFIG)
+isEmpty(FREETYPE2CONFIG) {
+    mac {
+        INCLUDEPATH += ../include
+        INCLUDEPATH += ../include/freetype2
+        LIBS += -L../lib -lfreetype -lz
+    # macports support
+        INCLUDEPATH += /opt/local/include /opt/local/include/freetype2
+        LIBS += -L/opt/local/lib
+    }
+    win32 {
+        INCLUDEPATH += ../include
+        INCLUDEPATH += ../include/freetype2
+        INCLUDEPATH += $$[QT_INSTALL_HEADERS]/freetype2
+        INCLUDEPATH += $$[QT_INSTALL_HEADERS]/freetype2/freetype2
+        LIBS += -L../lib \
+            -lfreetype
+    }
+    linux*|freebsd* {
+        CONFIG += link_pkgconfig
+        PKGCONFIG += freetype2
+    }
+} else {
+    message("configured freetype2 config: $$FREETYPE2CONFIG" )
+    INCLUDEPATH+=$$system("$$FREETYPE2CONFIG --prefix")/include/freetype2
+    LIBS += $$system("$$FREETYPE2CONFIG --libs")
 }
 OTHER_FILES += fontbuilder_ru.ts \
-    fontbuilder_en.ts \
-    fontbuilder_cn.ts
+    fontbuilder_en.ts
+
+message(Qt version: $$[QT_VERSION])
+message(Qt is installed in $$[QT_INSTALL_PREFIX])
+message(Qt resources can be found in the following locations:)
+message(Documentation: $$[QT_INSTALL_DOCS])
+message(Header files: $$[QT_INSTALL_HEADERS])
+message(Libraries: $$[QT_INSTALL_LIBS])
+message(Binary files (executables): $$[QT_INSTALL_BINS])
+message(Plugins: $$[QT_INSTALL_PLUGINS])
+message(Data files: $$[QT_INSTALL_DATA])
+message(Translation files: $$[QT_INSTALL_TRANSLATIONS])
+message(Settings: $$[QT_INSTALL_CONFIGURATION])
+message(Examples: $$[QT_INSTALL_EXAMPLES])
+

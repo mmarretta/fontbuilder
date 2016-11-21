@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2010-2010 Andrey AndryBlack Kunitsyn
+ * Copyright (c) 2010-2015 Andrey AndryBlack Kunitsyn
  * email:support.andryblack@gmail.com
  *
- * Report bugs and download new versions at http://code.google.com/p/fontbuilder
+ * Report bugs and download new versions at https://github.com/andryblack/fontbuilder
  *
  * This software is distributed under the MIT License.
  *
@@ -28,43 +28,23 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef FONTOPTIONSFRAME_H
-#define FONTOPTIONSFRAME_H
+#ifndef MYGUIEXPORTER_H
+#define MYGUIEXPORTER_H
 
-#include <QFrame>
+#include "../abstractexporter.h"
 
-namespace Ui {
-    class FontOptionsFrame;
-}
-
-class FontConfig;
-
-class FontOptionsFrame : public QFrame {
+class MyGUIExporter : public AbstractExporter
+{
     Q_OBJECT
 public:
-    FontOptionsFrame(QWidget *parent = 0);
-    ~FontOptionsFrame();
+    explicit MyGUIExporter(QObject *parent = 0);
 
-    void setConfig(FontConfig* config);
-protected:
-    void changeEvent(QEvent *e);
+    virtual bool Export(QByteArray& out);
+signals:
 
-private:
-    Ui::FontOptionsFrame *ui;
-    FontConfig* m_config;
+public slots:
 
-private slots:
-    void on_comboBoxDPI_currentIndexChanged(QString );
-    void on_spinBoxLineSpacing_valueChanged(int );
-    void on_spinBoxCharSpacing_valueChanged(int );
-    void on_doubleSpinBoxHeight_valueChanged(double );
-    void on_doubleSpinBoxWidth_valueChanged(double );
-    void on_horizontalSliderItalic_valueChanged(int value);
-    void on_horizontalSliderBold_valueChanged(int value);
-    void on_checkBoxSmoothing_toggled(bool checked);
-    void on_checkBoxMissingGlypths_toggled(bool checked);
-    void on_checkBoxAutohinting_toggled(bool checked);
-    void on_comboBox_Hinting_currentIndexChanged(int index);
 };
 
-#endif // FONTOPTIONSFRAME_H
+
+#endif // MYGUIEXPORTER_H

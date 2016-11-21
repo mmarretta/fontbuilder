@@ -28,16 +28,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <QtWidgets/QApplication>
+#include <Qt>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QApplication>
+#else
+#include <QtGui/QApplication>
+#endif
 #include <QCoreApplication>
-#include <QDir>
 #include "fontbuilder.h"
 
 int main(int argc, char *argv[])
 {
-	QDir applicationDir(QCoreApplication::applicationDirPath());
-	QCoreApplication::addLibraryPath(applicationDir.filePath("plugins"));
-
     QApplication a(argc, argv);
     QCoreApplication::setOrganizationName("AndryBlack");
     QCoreApplication::setOrganizationDomain("andryblack.com");

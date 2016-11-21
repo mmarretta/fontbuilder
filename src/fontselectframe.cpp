@@ -42,6 +42,15 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#undef __FTERRORS_H__
+static const char* get_error_descr(FT_Error err) {
+#define FT_ERRORDEF( e, v, s )  case e: return s;
+#define FT_ERROR_START_LIST     switch (err) {
+#define FT_ERROR_END_LIST      }
+#include FT_ERRORS_H
+    return "unknown";
+}
+
 
 FontSelectFrame::FontSelectFrame(QWidget *parent) :
     QFrame(parent),
@@ -77,15 +86,12 @@ void FontSelectFrame::changeEvent(QEvent *e)
     }
 }
 
-void FontSelectFrame::setConfig(FontConfig* config, bool isFirst = false) {
+void FontSelectFrame::setConfig(FontConfig* config) {
     m_config = 0;
     if (config) {
         bool b = config->blockSignals(true);
-        if (!config->path().isEmpty() && isFirst)
+        if (!config->path().isEmpty())
             setFontsDirectory(config->path());
-        else if(!m_database.isEmpty()) {
-            ui->comboBoxFamily->setCurrentIndex(0);
-        }
         if (!config->filename().isEmpty())
             selectFile(config->filename(),config->faceIndex());
         else if (!m_database.isEmpty()) {
@@ -131,9 +137,10 @@ void FontSelectFrame::setFontsDirectory(QString dir_name) {
             QStringList()
             << "*.ttf"
             << "*.pcf"
-            << "*.ttc"
             << "*.pcf.gz"
-            << "*.otf",
+            << "*.otf"
+            << "*.fon"
+            << "*.FON",
             QDir::Files | QDir::Readable
             );
     QProgressDialog* progress = 0;
@@ -163,7 +170,10 @@ void FontSelectFrame::setFontsDirectory(QString dir_name) {
                     error =  FT_New_Memory_Face(library,
                                                 data,bytes.size(),face_n,&face);
                     /// skip font if load error
-                    if (error!=0)  continue;
+                    if (error!=0) {
+                         qDebug() << "failed read font " << file_name << " " << face_n << " " << get_error_descr(error);
+                        continue;
+                    }
 
                     QString family = face->family_name;
                     //qDebug() << "face " << family << " "
@@ -191,6 +201,8 @@ void FontSelectFrame::setFontsDirectory(QString dir_name) {
                     FT_Done_Face(face);
 
                 }
+            } else {
+                qDebug() << "failed read font " << file_name << " " << get_error_descr(error);
             }
 
         }
@@ -357,8 +369,7 @@ void FontSelectFrame::on_comboBoxSize_currentIndexChanged(QString size_str)
 
 void FontSelectFrame::on_pushButtonDefault_clicked()
 {
-    //setFontsDirectory(QDesktopServices::storageLocation(QDesktopServices::FontsLocation));
-    setFontsDirectory(QStandardPaths::writableLocation(QStandardPaths::FontsLocation));
+    setFontsDirectory(FontConfig::defaultFontsPath());
 }
 
 void FontSelectFrame::on_pushButtonDefault_pressed()

@@ -29,12 +29,16 @@
  */
 
 #include "fontconfig.h"
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QStandardPaths>
+#else
 #include <QDesktopServices>
+#endif
 
 FontConfig::FontConfig(QObject *parent) :
     QObject(parent)
 {
-    m_path = QStandardPaths::writableLocation(QStandardPaths::FontsLocation);
+    m_path = defaultFontsPath();
     m_size = 0;
     m_characters = defaultCharacters();
     m_hinting = HintingDefault;
@@ -139,13 +143,6 @@ void FontConfig::setItalic(int b) {
     }
 }
 
-void FontConfig::setShadow(int b) {
-    if (m_shadow != b) {
-        m_shadow = b;
-        renderingOptionsChanged();
-    }
-}
-
 void FontConfig::setBold(int b) {
     if (m_bold!=b) {
         m_bold = b;
@@ -192,6 +189,19 @@ void FontConfig::setDPI(int dpi) {
         m_dpi = dpi;
         sizeChanged();
     }
+}
+
+QString FontConfig::defaultFontsPath()
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+    QStringList locations = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
+    if (locations.isEmpty()) {
+        return "/usr/X11/share/fonts/TTF";
+    }
+    return locations.front();
+#else
+    return QDesktopServices::storageLocation(QDesktopServices::FontsLocation);
+#endif
 }
 
 void FontConfig::normalize() {

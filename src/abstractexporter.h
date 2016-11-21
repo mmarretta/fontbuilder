@@ -38,6 +38,9 @@
 #include <QVector>
 #include "rendererdata.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 class FontConfig;
 class LayoutConfig;
 class LayoutData;
@@ -51,12 +54,13 @@ public:
     const QString& getErrorString() const { return m_error_string;}
     const QString& getExtension() const { return m_extension;}
 
-    void setChnlTypes(const QString& type) { m_chnl_type = type;}
     bool Write(QByteArray& out);
 
+    void setFace(FT_Face face) { m_face = face; }
     void setFontConfig(const FontConfig* config,const LayoutConfig* layout) { m_font_config = config;m_layout_config=layout;}
     void setData(const LayoutData* data,const RendererData& rendered);
     void setTextureFilename(const QString& fn) { m_texture_file = fn;}
+    void setScale(float scale) { m_scale = scale; }
 private:
     QString m_error_string;
     QString m_extension;
@@ -66,9 +70,11 @@ private:
     const FontConfig* m_font_config;
     const LayoutConfig* m_layout_config;
     RenderedMetrics m_metrics;
+    FT_Face m_face;
+    float   m_scale;
 protected:
     struct Symbol {
-        ushort id;
+        uint id;
         int placeX;
         int placeY;
         int placeW;
@@ -76,7 +82,7 @@ protected:
         int offsetX;
         int offsetY;
         int advance;
-        QMap<ushort,int> kerning;
+        QMap<uint,int> kerning;
     };
 
     const FontConfig* fontConfig() const { return m_font_config;}
@@ -90,8 +96,8 @@ protected:
     const RenderedMetrics& metrics() const { return m_metrics;}
     int height() const;
     virtual bool Export(QByteArray& out) = 0;
-
-    QString m_chnl_type;
+    FT_Face face() const {return m_face;}
+    float scale() const { return m_scale; }
 private:
      QVector<Symbol> m_symbols;
 };
